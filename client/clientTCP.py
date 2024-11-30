@@ -21,5 +21,5 @@ def tcp_test(data_size, repetitions):
     print(f"Tamanho do Pacote: {data_size} bytes | RTT Médio: {avg_time:.6f} segundos")
 
 # Testa pacotes de diferentes tamanhos
-for size in [4096, 8192]:
-    tcp_test(size, 5)
+for size in [1000]:
+    tcp_test(size, 100)
