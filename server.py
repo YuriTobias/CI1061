@@ -3,12 +3,12 @@ import time
 import socket
 import logging
 
-SEG_SIZE = 65507
-TIMEOUT = 10
+SEG_SIZE = 1024
+TIMEOUT = 4
 
 # Configure logging
 logging.basicConfig(
-    filename="check_udp_server_log.log",  # Log file name
+    filename="nocheck_udp_server_log.log",  # Log file name
     level=logging.INFO,         # Log level
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -52,7 +52,7 @@ def tcp_server(host, port):
             logging.info(f"File '{file_name}' received and saved at '{file_path}'.")
             end_time = time.time()
             logging.info(f"Transmission and server process ended at {end_time}.")
-            logging.info(f"Total transmission time: {end_time - start_timestamp:.10f} seconds.")
+            logging.info(f"Total transmission time: {end_time - start_timestamp - 0.2:.10f} seconds.") # Removes 0.2 because of the client sleep
     
 
 def udp_server(host, port):
@@ -85,6 +85,7 @@ def udp_server(host, port):
             print(f"Receiving file '{file_name}' from {addr}...")
             logging.info(f"Receiving file '{file_name}'.")
             
+            timeout = 0
             with open(file_path, 'wb') as f:
                 while True:
                     try:
@@ -94,6 +95,7 @@ def udp_server(host, port):
                         f.write(data)
                     except socket.timeout:
                         # Timeout occurred; send a request to the client for EOF
+                        timeout = 1
                         print("Timeout reached. EOF segment lost...")
                         logging.info(f"Timeout reached. EOF segment lost...")
                         break
@@ -105,7 +107,10 @@ def udp_server(host, port):
 
             end_time = time.time()
             logging.info(f"Transmission and server process ended at {end_time}.")
-            logging.info(f"Total transmission time: {end_time - start_timestamp:.10f} seconds.")
+            if timeout == 0:
+                logging.info(f"Total transmission time: {end_time - start_timestamp:.10f} seconds.")
+            else:
+                logging.info(f"Total transmission time: {end_time - start_timestamp - 4:.10f} seconds.")
         except socket.timeout:
             print("Initial file name reception timed out. Closing server.")
             logging.info(f"Initial file name reception timed out. Closing server.")

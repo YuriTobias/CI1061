@@ -5,11 +5,11 @@ import string
 import socket
 import logging
 
-SEG_SIZE = 65507
+SEG_SIZE = 1024
 
 # Configure logging
 logging.basicConfig(
-    filename="check_tcp_client_log.log",  # Log file name
+    filename="nocheck_udp_client_log.log",  # Log file name
     level=logging.INFO,         # Log level
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -25,7 +25,7 @@ def tcp_client(host, port):
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         # Disable checksum
-        #client_socket.setsockopt(socket.SOL_SOCKET, 11, 1)
+        client_socket.setsockopt(socket.SOL_SOCKET, 11, 1)
         
         # Socket connection
         client_socket.connect((host, port))
@@ -52,7 +52,7 @@ def tcp_client(host, port):
 
         end_time = time.time()
         logging.info(f"Transmission ended at {end_time}.")
-        logging.info(f"Total transmission time: {end_time - start_time:.10f} seconds.")
+        logging.info(f"Total transmission time: {end_time - start_time - 0.2:.10f} seconds.") # Removes 0.2 because of the sleep
         print(f"File '{file_name}' sent successfully.")
 
 def udp_client(host, port):
