@@ -59,9 +59,6 @@ def udp_server(host, port):
     os.makedirs("received_files", exist_ok=True)  # Ensure the directory exists
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server_socket:
-        # Disable the checksum
-        # server_socket.setsockopt(socket.SOL_SOCKET, 11, 1)
-        
         server_socket.bind((host, port))
         print(f"UDP Server listening on {host}:{port}")
 
@@ -145,6 +142,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# Calculate the time both with Time.perf_counter() & Time.time() to plot graphs
-#

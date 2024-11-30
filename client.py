@@ -21,11 +21,6 @@ def tcp_client(host, port):
     # Ask the user for file details
     file_name = input("Enter the name of the file to use: ").strip()
     file_path = os.path.join("sent_files", file_name)
-    # num_bytes = int(input("Enter the number of bytes for the file: "))
-    
-    # Create the file
-    # create_random_file(file_path, num_bytes)
-
     file_size = os.path.getsize(file_path)
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -67,11 +62,6 @@ def udp_client(host, port):
     # Ask the user for file details
     file_name = input("Enter the name of the file to use: ").strip()
     file_path = os.path.join("sent_files", file_name)
-    # num_bytes = int(input("Enter the number of bytes for the file: "))
-    
-    # Create the file
-    # create_random_file(file_path, num_bytes)
-
     file_size = os.path.getsize(file_path)
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as client_socket:
@@ -116,7 +106,7 @@ def create_random_file(file_name, num_bytes):
 
 
 def main():
-    # Create files with a specific number os bytes
+    # Create files with a specific number of bytes
     # file_name = input("Enter the name of the file to create: ").strip()
     # file_path = os.path.join("sent_files", file_name)
     # num_bytes = int(input("Enter the number of bytes for the file: "))
