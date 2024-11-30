@@ -18,5 +18,5 @@ def udp_test(data_size, repetitions):
 
             client.sendto(data.encode(), (ESP32_IP, PORT))
             
-for size in [1450]:
+for size in [256]:
     udp_test(size, 10000)
