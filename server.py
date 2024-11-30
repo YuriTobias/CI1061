@@ -1,7 +1,18 @@
 import os
+import time
 import socket
+import logging
 
-SEG_SIZE = 4096
+SEG_SIZE = 65507
+TIMEOUT = 10
+
+# Configure logging
+logging.basicConfig(
+    filename="check_udp_server_log.log",  # Log file name
+    level=logging.INFO,         # Log level
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 def tcp_server(host, port):
     os.makedirs("received_files", exist_ok=True)  # Ensure the directory exists
@@ -11,13 +22,24 @@ def tcp_server(host, port):
         server_socket.listen(1)
         print(f"TCP Server listening on {host}:{port}")
 
+        logging.info(f"TCP Server listening on {host}:{port}")
         conn, addr = server_socket.accept()
         with conn:
             print(f"Connected by {addr}")
+            logging.info(f"Connected by {addr}.")
+
+            start_timestamp = conn.recv(SEG_SIZE).decode()
+            start_timestamp = float(start_timestamp)
+            
+            start_time = time.time()
+            logging.info(f"Server process started at {start_time}.")
+            logging.info(f"Transmission started at {start_timestamp} accordingdly to client")
+
             # Receive the padded file name
             file_name = conn.recv(SEG_SIZE).decode()
             file_path = os.path.join("received_files", file_name)
             print(f"Receiving file '{file_name}'...")
+            logging.info(f"Receiving file '{file_name}'.")
 
             with open(file_path, 'wb') as f:
                 while True:
@@ -27,38 +49,73 @@ def tcp_server(host, port):
                     f.write(data)
 
             print(f"File '{file_name}' received and saved at '{file_path}'.")
-            # while True:
-            #     data = conn.recv(1024)
-            #     if not data:
-            #         break
-            #     print(f"Received: {data.decode()}")
+            logging.info(f"File '{file_name}' received and saved at '{file_path}'.")
+            end_time = time.time()
+            logging.info(f"Transmission and server process ended at {end_time}.")
+            logging.info(f"Total transmission time: {end_time - start_timestamp:.10f} seconds.")
+    
 
 def udp_server(host, port):
     os.makedirs("received_files", exist_ok=True)  # Ensure the directory exists
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server_socket:
+        # Disable the checksum
+        # server_socket.setsockopt(socket.SOL_SOCKET, 11, 1)
+        
         server_socket.bind((host, port))
         print(f"UDP Server listening on {host}:{port}")
 
-        # Receive the padded file name
-        file_name, addr = server_socket.recvfrom(SEG_SIZE)
-        file_name = file_name.decode()
-        file_path = os.path.join("received_files", file_name)
-        print(f"Receiving file '{file_name}'...")
+        logging.info(f"UDP Server listening on {host}:{port}")
 
-        print(f"Receiving file '{file_name}' from {addr}...")
-        with open(file_path, 'wb') as f:
-            while True:
-                data, addr = server_socket.recvfrom(SEG_SIZE)
-                if data == b"EOF":  # End of File marker
-                    break
-                f.write(data)
+        try:
+            # Receive the start timestamp
+            start_timestamp, addr = server_socket.recvfrom(SEG_SIZE)  # Receive from the UDP socket
+            start_timestamp = start_timestamp.decode()  # Decode the received bytes
+            start_timestamp = float(start_timestamp)    # Convert the decoded string to a float
 
-        print(f"File '{file_name}' received and saved at '{file_path}'.")
+            start_time = time.time()
+            logging.info(f"Server process started at {start_time}.")
+            logging.info(f"Transmission started at {start_timestamp} accordingdly to client")
+
+            # Set the timeout for receiving data
+            server_socket.settimeout(TIMEOUT)
+
+            # Receive the padded file name
+            file_name, addr = server_socket.recvfrom(SEG_SIZE)
+            file_name = file_name.decode()
+            file_path = os.path.join("received_files", file_name)
+            
+            print(f"Receiving file '{file_name}' from {addr}...")
+            logging.info(f"Receiving file '{file_name}'.")
+            
+            with open(file_path, 'wb') as f:
+                while True:
+                    try:
+                        data, addr = server_socket.recvfrom(SEG_SIZE)
+                        if data == b"EOF":  # End of File marker
+                            break
+                        f.write(data)
+                    except socket.timeout:
+                        # Timeout occurred; send a request to the client for EOF
+                        print("Timeout reached. EOF segment lost...")
+                        logging.info(f"Timeout reached. EOF segment lost...")
+                        break
+
+            # Get the file size and log it
+            file_size = os.path.getsize(file_path)
+            print(f"File '{file_name}' received successfully and saved at '{file_path}'. Size: {file_size} bytes.")
+            logging.info(f"File '{file_name}' received successfully and saved at '{file_path}'. Size: {file_size} bytes.")
+
+            end_time = time.time()
+            logging.info(f"Transmission and server process ended at {end_time}.")
+            logging.info(f"Total transmission time: {end_time - start_timestamp:.10f} seconds.")
+        except socket.timeout:
+            print("Initial file name reception timed out. Closing server.")
+            logging.info(f"Initial file name reception timed out. Closing server.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
         
-        # while True:
-        #     data, addr = server_socket.recvfrom(SEG_SIZE)
-        #     print(f"Received from {addr}: {data.decode()}")
 
 def main():
     # List of server types
@@ -88,3 +145,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Calculate the time both with Time.perf_counter() & Time.time() to plot graphs
+#

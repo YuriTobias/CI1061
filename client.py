@@ -1,26 +1,49 @@
 import os
+import time
 import random
 import string
 import socket
-import time
+import logging
 
-SEG_SIZE = 1024
+SEG_SIZE = 65507
+
+# Configure logging
+logging.basicConfig(
+    filename="check_tcp_client_log.log",  # Log file name
+    level=logging.INFO,         # Log level
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 def tcp_client(host, port):
     # Ensure the directory exists
     os.makedirs("sent_files", exist_ok=True)
 
     # Ask the user for file details
-    file_name = input("Enter the name of the file to create: ").strip()
+    file_name = input("Enter the name of the file to use: ").strip()
     file_path = os.path.join("sent_files", file_name)
-    num_bytes = int(input("Enter the number of bytes for the file: "))
+    # num_bytes = int(input("Enter the number of bytes for the file: "))
     
     # Create the file
-    create_random_file(file_path, num_bytes)
+    # create_random_file(file_path, num_bytes)
+
+    file_size = os.path.getsize(file_path)
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+        # Disable checksum
+        #client_socket.setsockopt(socket.SOL_SOCKET, 11, 1)
+        
+        # Socket connection
         client_socket.connect((host, port))
         print(f"Connected to TCP server at {host}:{port}")
+
+        logging.info(f"Connected to TCP server at {host}:{port}")
+        logging.info(f"Preparing to send file '{file_name}' of size {file_size} bytes.")
+        start_time = time.time()
+        logging.info(f"Transmission started at {start_time}.")
+
+        # Send timestamp
+        client_socket.sendto(str(start_time).encode(), (host, port))
+        time.sleep(0.1)
 
          # Send file name
         client_socket.sendall(file_name.encode())
@@ -32,31 +55,37 @@ def tcp_client(host, port):
             while chunk := f.read(SEG_SIZE):  # Read and send in chunks
                 client_socket.sendall(chunk)
 
+        end_time = time.time()
+        logging.info(f"Transmission ended at {end_time}.")
+        logging.info(f"Total transmission time: {end_time - start_time:.10f} seconds.")
         print(f"File '{file_name}' sent successfully.")
-
-        # while True:
-        #     message = input("Enter message to send (type 'exit' to quit): ")
-        #     if message.lower() == 'exit':
-        #         break
-        #     client_socket.sendall(message.encode())
-            # data = client_socket.recv(1024)
-            # print(f"Received: {data.decode()}")
 
 def udp_client(host, port):
     # Ensure the directory exists
     os.makedirs("sent_files", exist_ok=True)
     
     # Ask the user for file details
-    file_name = input("Enter the name of the file to create: ").strip()
+    file_name = input("Enter the name of the file to use: ").strip()
     file_path = os.path.join("sent_files", file_name)
-    num_bytes = int(input("Enter the number of bytes for the file: "))
+    # num_bytes = int(input("Enter the number of bytes for the file: "))
     
     # Create the file
-    create_random_file(file_path, num_bytes)
+    # create_random_file(file_path, num_bytes)
+
+    file_size = os.path.getsize(file_path)
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as client_socket:
+        # Disable checksum
+        # client_socket.setsockopt(socket.SOL_SOCKET, 11, 1)
+
+        logging.info(f"Preparing to send file '{file_name}' of size {file_size} bytes.")
+        start_time = time.time()
+        logging.info(f"Transmission started at {start_time}.")
+        
         print(f"UDP client ready to send to {host}:{port}")
 
+        # Send timestamp
+        client_socket.sendto(str(start_time).encode(), (host, port))
         # Send file name
         client_socket.sendto(file_name.encode(), (host, port))
 
@@ -69,15 +98,11 @@ def udp_client(host, port):
         # Send an EOF marker to indicate the end of the file
         client_socket.sendto(b"EOF", (host, port))
 
-        # while True:
-        #     message = input("Enter message to send (type 'exit' to quit): ")
-        #     if message.lower() == 'exit':
-        #         break
-        #     client_socket.sendto(message.encode(), (host, port))
-            # data, addr = client_socket.recvfrom(1024)
-            # print(f"Received: {data.decode()} from {addr}")
+        end_time = time.time()
+        logging.info(f"Transmission ended at {end_time}.")
+        logging.info(f"Total transmission time: {end_time - start_time:.10f} seconds.")
 
-
+        print(f"File '{file_name}' sent successfully.")
 
 def create_random_file(file_name, num_bytes):
     """Create a file with random text of the specified size."""
@@ -91,6 +116,13 @@ def create_random_file(file_name, num_bytes):
 
 
 def main():
+    # Create files with a specific number os bytes
+    # file_name = input("Enter the name of the file to create: ").strip()
+    # file_path = os.path.join("sent_files", file_name)
+    # num_bytes = int(input("Enter the number of bytes for the file: "))
+    # os.makedirs("sent_files", exist_ok=True)
+    # create_random_file(file_path, num_bytes)
+    
     # List of client types
     client_types = ["TCP", "UDP"]
 
